@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     const { projectId, to, message } = await request.json()
 
     // Get project config
-    const configStr = process.env.PROJECTS_CONFIG || '[]'
+    const configStr = process.env.WHATSAPP_PROJECTS || '[]'
     const projects = JSON.parse(configStr)
     const project = projects.find((p: any) => p.id === projectId)
 
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Proyecto no encontrado' })
     }
 
-    const accessToken = process.env.META_ACCESS_TOKEN
+    const accessToken = project.accessToken
 
     // Send via Meta Cloud API
     const response = await fetch(

@@ -170,9 +170,8 @@ export default function Home() {
             Configura las variables de entorno en Vercel:
           </p>
           <pre className="bg-gray-100 p-2 text-xs overflow-x-auto">
-{`WHATSAPP_VERIFY_TOKEN=tu_token_secreto
-META_ACCESS_TOKEN=tu_access_token
-PROJECTS_CONFIG=[{"id":"cierratutag","name":"Cierra tu TAG","phoneNumberId":"xxx","phoneNumber":"+56xxx"}]`}
+{`WEBHOOK_VERIFY_TOKEN=tu_token_secreto
+WHATSAPP_PROJECTS=[{"id":"cierratutag","name":"Cierra tu TAG","phoneNumberId":"xxx","accessToken":"EAA..."}]`}
           </pre>
         </div>
       )}

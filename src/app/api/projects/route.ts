@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    const configStr = process.env.PROJECTS_CONFIG || '[]'
+    const configStr = process.env.WHATSAPP_PROJECTS || '[]'
     const projects = JSON.parse(configStr)
     return NextResponse.json({ projects })
   } catch (error) {
