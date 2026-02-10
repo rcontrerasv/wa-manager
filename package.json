@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.18",
+    "@upstash/redis": "^1.36.2",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest"
