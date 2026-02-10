@@ -34,7 +34,13 @@ export default function Home() {
   const [status, setStatus] = useState('')
   const [newContact, setNewContact] = useState('')
   const [showNewChat, setShowNewChat] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Handle hydration
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     fetchProjects()
@@ -50,11 +56,11 @@ export default function Home() {
 
   useEffect(() => {
     if (selectedProject && selectedContact) {
-      const filtered = messages.filter(m => 
-        m.from === selectedContact || m.to === selectedContact
-      )
-      // Already filtered in fetchConversations, but let's scroll
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      // Respect prefers-reduced-motion
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      messagesEndRef.current?.scrollIntoView({ 
+        behavior: prefersReducedMotion ? 'auto' : 'smooth' 
+      })
     }
   }, [messages, selectedContact])
 
@@ -93,7 +99,7 @@ export default function Home() {
         convs.push({
           contact,
           lastMessage: sorted[0],
-          unread: msgs.filter(m => m.direction === 'incoming').length // Simplified
+          unread: msgs.filter(m => m.direction === 'incoming').length
         })
       })
 
@@ -114,7 +120,6 @@ export default function Home() {
   const selectContact = (contact: string) => {
     setSelectedContact(contact)
     setShowNewChat(false)
-    // Filter messages for this contact
     const conv = conversations.find(c => c.contact === contact)
     if (conv) {
       fetchConversations(selectedProject!.id)
@@ -128,14 +133,14 @@ export default function Home() {
       return
     }
 
-    setStatus('Enviando...')
+    setStatus('Enviando…')
     try {
       const res = await fetch('/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           projectId: selectedProject.id,
-          to: recipient.replace(/\D/g, ''), // Remove non-digits
+          to: recipient.replace(/\D/g, ''),
           message: newMessage,
         }),
       })
@@ -158,6 +163,7 @@ export default function Home() {
   }
 
   const formatTime = (timestamp: number) => {
+    if (!mounted) return '' // Prevent hydration mismatch
     const date = new Date(timestamp)
     const now = new Date()
     const isToday = date.toDateString() === now.toDateString()
@@ -186,13 +192,13 @@ export default function Home() {
               Agrega las variables de entorno en Vercel:
             </p>
             <pre className="bg-gray-100 p-3 text-xs rounded overflow-x-auto">
-{`WEBHOOK_VERIFY_TOKEN=...
-REDIS_URL=...
+{`WEBHOOK_VERIFY_TOKEN=…
+REDIS_URL=…
 WHATSAPP_PROJECTS=[{
   "id": "proyecto1",
   "name": "Mi Proyecto",
-  "phoneNumberId": "123...",
-  "accessToken": "EAA..."
+  "phoneNumberId": "123…",
+  "accessToken": "EAA…"
 }]`}
             </pre>
           </div>
@@ -212,12 +218,13 @@ WHATSAPP_PROJECTS=[{
               setSelectedProject(project)
               setSelectedContact(null)
             }}
-            className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg transition-all ${
+            aria-label={`Proyecto: ${project.name}`}
+            aria-pressed={selectedProject?.id === project.id}
+            className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 ${
               selectedProject?.id === project.id
                 ? 'bg-green-600'
                 : 'bg-gray-700 hover:bg-gray-600'
             }`}
-            title={project.name}
           >
             {project.name.charAt(0).toUpperCase()}
           </button>
@@ -234,8 +241,8 @@ WHATSAPP_PROJECTS=[{
                 setShowNewChat(true)
                 setSelectedContact(null)
               }}
-              className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center hover:bg-green-700"
-              title="Nueva conversación"
+              aria-label="Nueva conversación"
+              className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center hover:bg-green-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2"
             >
               +
             </button>
@@ -253,7 +260,9 @@ WHATSAPP_PROJECTS=[{
               <button
                 key={conv.contact}
                 onClick={() => selectContact(conv.contact)}
-                className={`w-full p-4 text-left border-b hover:bg-gray-50 transition-colors ${
+                aria-label={`Conversación con ${formatPhone(conv.contact)}`}
+                aria-current={selectedContact === conv.contact ? 'true' : undefined}
+                className={`w-full p-4 text-left border-b hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-600 ${
                   selectedContact === conv.contact ? 'bg-gray-100' : ''
                 }`}
               >
@@ -278,7 +287,7 @@ WHATSAPP_PROJECTS=[{
         {!selectedContact && !showNewChat ? (
           <div className="flex-1 flex items-center justify-center text-gray-400">
             <div className="text-center">
-              <div className="text-6xl mb-4">💬</div>
+              <div className="text-6xl mb-4" aria-hidden="true">💬</div>
               <p>Selecciona una conversación</p>
               <p className="text-sm">o inicia una nueva con el botón +</p>
             </div>
@@ -290,13 +299,18 @@ WHATSAPP_PROJECTS=[{
               {showNewChat ? (
                 <div>
                   <h2 className="font-semibold">Nueva conversación</h2>
+                  <label htmlFor="new-contact" className="sr-only">
+                    Número de teléfono
+                  </label>
                   <input
-                    type="text"
-                    placeholder="Número (ej: 56912345678)"
+                    id="new-contact"
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    placeholder="Número (ej: 56912345678)…"
                     value={newContact}
                     onChange={(e) => setNewContact(e.target.value)}
-                    className="mt-2 w-full max-w-xs border rounded px-3 py-2 text-sm"
-                    autoFocus
+                    className="mt-2 w-full max-w-xs border rounded px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1"
                   />
                 </div>
               ) : (
@@ -305,7 +319,7 @@ WHATSAPP_PROJECTS=[{
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3" role="log" aria-live="polite">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
@@ -333,21 +347,25 @@ WHATSAPP_PROJECTS=[{
             {/* Message Input */}
             <div className="bg-white border-t p-4">
               {status && (
-                <p className="text-sm text-red-500 mb-2">{status}</p>
+                <p className="text-sm text-red-500 mb-2" role="alert">{status}</p>
               )}
               <div className="flex gap-2">
+                <label htmlFor="message-input" className="sr-only">
+                  Escribe un mensaje
+                </label>
                 <input
+                  id="message-input"
                   type="text"
-                  placeholder="Escribe un mensaje..."
+                  placeholder="Escribe un mensaje…"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                  className="flex-1 border rounded-full px-4 py-2"
+                  className="flex-1 border rounded-full px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600"
                 />
                 <button
                   onClick={sendMessage}
                   disabled={!newMessage.trim()}
-                  className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2"
                 >
                   Enviar
                 </button>
