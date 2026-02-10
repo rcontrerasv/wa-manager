@@ -20,9 +20,10 @@ export async function GET(request: NextRequest) {
 
 // Receive messages (POST)
 export async function POST(request: NextRequest) {
+  console.log('=== WEBHOOK POST RECEIVED ===')
   try {
     const body = await request.json()
-    console.log('Webhook received:', JSON.stringify(body, null, 2))
+    console.log('Webhook body:', JSON.stringify(body, null, 2))
 
     // Process incoming messages
     if (body.object === 'whatsapp_business_account') {

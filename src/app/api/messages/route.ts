@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Get phoneNumberId from project config
-  const configStr = process.env.PROJECTS_CONFIG || '[]'
+  const configStr = process.env.WHATSAPP_PROJECTS || '[]'
   const projects = JSON.parse(configStr)
   const project = projects.find((p: any) => p.id === projectId)
 
