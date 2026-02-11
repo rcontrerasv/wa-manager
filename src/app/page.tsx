@@ -36,6 +36,34 @@ export default function Home() {
   const [showNewChat, setShowNewChat] = useState(false)
   const [mounted, setMounted] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const prevMessageCountRef = useRef<number>(0)
+  const audioContextRef = useRef<AudioContext | null>(null)
+
+  // Play notification sound
+  const playNotificationSound = () => {
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+      }
+      const ctx = audioContextRef.current
+      const oscillator = ctx.createOscillator()
+      const gainNode = ctx.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(ctx.destination)
+      
+      oscillator.frequency.setValueAtTime(830, ctx.currentTime)
+      oscillator.frequency.setValueAtTime(660, ctx.currentTime + 0.1)
+      
+      gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3)
+      
+      oscillator.start(ctx.currentTime)
+      oscillator.stop(ctx.currentTime + 0.3)
+    } catch (e) {
+      console.log('Could not play notification sound')
+    }
+  }
 
   // Handle hydration
   useEffect(() => {
@@ -105,6 +133,14 @@ export default function Home() {
 
       // Sort by last message
       convs.sort((a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp)
+      
+      // Check for new incoming messages and play sound
+      const incomingCount = allMessages.filter(m => m.direction === 'incoming').length
+      if (prevMessageCountRef.current > 0 && incomingCount > prevMessageCountRef.current) {
+        playNotificationSound()
+      }
+      prevMessageCountRef.current = incomingCount
+      
       setConversations(convs)
 
       // Update messages for selected contact

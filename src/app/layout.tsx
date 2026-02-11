@@ -4,6 +4,9 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'WA Manager',
   description: 'WhatsApp Business Manager',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({
