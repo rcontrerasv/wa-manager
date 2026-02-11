@@ -73,7 +73,7 @@ export default function Home() {
   useEffect(() => {
     if (selectedProject) {
       fetchConversations(selectedProject.id)
-      const interval = setInterval(() => fetchConversations(selectedProject.id), 5000)
+      const interval = setInterval(() => fetchConversations(selectedProject.id), 2000)
       return () => clearInterval(interval)
     }
   }, [selectedProject])
