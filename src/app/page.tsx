@@ -35,33 +35,29 @@ export default function Home() {
   const [newContact, setNewContact] = useState('')
   const [showNewChat, setShowNewChat] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [soundEnabled, setSoundEnabled] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const prevMessageCountRef = useRef<number>(0)
-  const audioContextRef = useRef<AudioContext | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Initialize audio on first user interaction
+  const enableSound = () => {
+    if (!soundEnabled && typeof window !== 'undefined') {
+      // Create audio element with a data URI notification sound
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleA0NUbXU7JNdFABIsNTsmWMPAEa00NlZAAAAQJzExnxMAAAAMIiOpmEgAAAbfpB3PxAAAB2Ck4JBAAAAE3l3aDoAAAAOb2JXPQAAAAxmVExBAAAAC2JQR0EAAAALX0tGQgAAAAtiT0dCAAAAC19LRkIAAAALYk9HQgAAAAtfS0ZCAAAACv8=')
+      audio.volume = 0.5
+      audioRef.current = audio
+      setSoundEnabled(true)
+      // Play once to unlock audio
+      audio.play().catch(() => {})
+    }
+  }
 
   // Play notification sound
   const playNotificationSound = () => {
-    try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
-      }
-      const ctx = audioContextRef.current
-      const oscillator = ctx.createOscillator()
-      const gainNode = ctx.createGain()
-      
-      oscillator.connect(gainNode)
-      gainNode.connect(ctx.destination)
-      
-      oscillator.frequency.setValueAtTime(830, ctx.currentTime)
-      oscillator.frequency.setValueAtTime(660, ctx.currentTime + 0.1)
-      
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3)
-      
-      oscillator.start(ctx.currentTime)
-      oscillator.stop(ctx.currentTime + 0.3)
-    } catch (e) {
-      console.log('Could not play notification sound')
+    if (audioRef.current && soundEnabled) {
+      audioRef.current.currentTime = 0
+      audioRef.current.play().catch(() => {})
     }
   }
 
@@ -244,7 +240,13 @@ WHATSAPP_PROJECTS=[{
   }
 
   return (
-    <div className="h-screen flex bg-gray-100">
+    <div className="h-screen flex bg-gray-100" onClick={enableSound}>
+      {/* Sound indicator */}
+      {!soundEnabled && (
+        <div className="fixed top-2 right-2 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs z-50">
+          🔇 Click para activar sonido
+        </div>
+      )}
       {/* Sidebar - Projects */}
       <div className="w-16 bg-gray-900 flex flex-col items-center py-4 gap-2">
         {projects.map((project) => (
